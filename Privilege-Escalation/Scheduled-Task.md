@@ -1,16 +1,16 @@
 
 # **Schedule Task Windows Privilege Escalation**
-1. Introduction to Windows Task Scheduler
+# 1. Introduction to Windows Task Scheduler
 Windows Task Scheduler is a built-in service that allows users to automate the execution of tasks at specified times or upon certain triggers. Administrators commonly use this feature for system maintenance, but attackers can also exploit it for persistence and privilege escalation.
 An adversary can manipulate scheduled tasks to execute malicious code with elevated privileges. This attack vector is particularly useful when a task is configured to run with SYSTEM privileges but its executable is writable by a low-privileged user.
-2. Abusing Scheduled Tasks for Privilege Escalation
+# 2. Abusing Scheduled Tasks for Privilege Escalation
 By identifying a scheduled task that executes as SYSTEM, an attacker with write permissions to its executable can replace it with a malicious payload. The next time the task runs, the payload executes with SYSTEM privileges, providing full control over the compromised machine.
 The attack process follows these steps:
 Identify a scheduled task running with SYSTEM privileges.
 Check if the current user has write or modify permissions on the task's executable file.
 Replace the executable with a malicious payload.
 Wait for the task to run and gain a SYSTEM shell.
-3. Setting Up the Lab Environment
+# 3. Setting Up the Lab Environment
 For this demonstration, we set up a Windows 10 victim machine and a Kali Linux attacker machine.
 Attacker: Kali Linux (192.168.100.10) running Metasploit Framework
 Victim: Windows 10 (192.168.1.11) with a scheduled task
