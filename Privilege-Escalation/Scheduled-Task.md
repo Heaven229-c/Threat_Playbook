@@ -1,6 +1,5 @@
-## a
-Schedule Task Windows Privilege Escalation
 
+# **Schedule Task Windows Privilege Escalation**
 1. Introduction to Windows Task Scheduler
 Windows Task Scheduler is a built-in service that allows users to automate the execution of tasks at specified times or upon certain triggers. Administrators commonly use this feature for system maintenance, but attackers can also exploit it for persistence and privilege escalation.
 An adversary can manipulate scheduled tasks to execute malicious code with elevated privileges. This attack vector is particularly useful when a task is configured to run with SYSTEM privileges but its executable is writable by a low-privileged user.
